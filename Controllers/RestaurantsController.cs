@@ -1,37 +1,62 @@
 using Microsoft.AspNetCore.Mvc;
+using YourNamespace.Services;
+using YourNamespace.Models;
 
-namespace HotelBookingAPI.Controllers
+namespace YourNamespace.Controllers
 {
+    [Route("api/[controller]")]
     [ApiController]
-    [Route("api/restaurants")]
     public class RestaurantsController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult GetRestaurants()
+        private readonly IRestaurantService _restaurantService;
+
+        public RestaurantsController(IRestaurantService restaurantService)
         {
-            // Logic to list all restaurants
-            return Ok("List of restaurants");
+            _restaurantService = restaurantService;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Restaurant>>> GetRestaurants()
+        {
+            var restaurants = await _restaurantService.GetAllRestaurantsAsync();
+            return Ok(restaurants);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Restaurant>> GetRestaurant(int id)
+        {
+            var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
+            if (restaurant == null)
+                return NotFound();
+
+            return Ok(restaurant);
         }
 
         [HttpPost]
-        public IActionResult AddRestaurant()
+        public async Task<ActionResult<Restaurant>> CreateRestaurant(Restaurant restaurant)
         {
-            // Logic to add a new restaurant
-            return Ok("Restaurant added successfully");
+            var createdRestaurant = await _restaurantService.CreateRestaurantAsync(restaurant);
+            return CreatedAtAction(nameof(GetRestaurant), new { id = createdRestaurant.Id }, createdRestaurant);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateRestaurant(int id)
+        public async Task<IActionResult> UpdateRestaurant(int id, Restaurant restaurant)
         {
-            // Logic to update a restaurant
-            return Ok("Restaurant updated successfully");
+            var updatedRestaurant = await _restaurantService.UpdateRestaurantAsync(id, restaurant);
+            if (updatedRestaurant == null)
+                return NotFound();
+
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteRestaurant(int id)
+        public async Task<IActionResult> DeleteRestaurant(int id)
         {
-            // Logic to delete a restaurant
-            return Ok("Restaurant deleted successfully");
+            var result = await _restaurantService.DeleteRestaurantAsync(id);
+            if (!result)
+                return NotFound();
+
+            return NoContent();
         }
     }
 }
