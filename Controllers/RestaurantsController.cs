@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using HotelBookingAPI.Models.DTOs;
+using HotelBookingAPI.Services.Interfaces;
 
 namespace HotelBookingAPI.Controllers
 {
@@ -6,32 +8,63 @@ namespace HotelBookingAPI.Controllers
     [Route("api/restaurants")]
     public class RestaurantsController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult GetRestaurants()
+        private readonly IRestaurantService _restaurantService;
+        private readonly IBookingService _bookingService;
+
+        public RestaurantsController(
+            IRestaurantService restaurantService,
+            IBookingService bookingService)
         {
-            // Logic to list all restaurants
-            return Ok("List of restaurants");
+            _restaurantService = restaurantService;
+            _bookingService = bookingService;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<RestaurantDTO>>> GetRestaurants()
+        {
+            var restaurants = await _restaurantService.GetAllRestaurantsAsync();
+            return Ok(restaurants);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<RestaurantDTO>> GetRestaurant(int id)
+        {
+            var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
+            if (restaurant == null)
+                return NotFound();
+            return restaurant;
+        }
+
+        [HttpGet("{id}/menu")]
+        public async Task<ActionResult<IEnumerable<MenuItemDTO>>> GetRestaurantMenu(int id)
+        {
+            var menu = await _restaurantService.GetRestaurantMenuAsync(id);
+            return Ok(menu);
         }
 
         [HttpPost]
-        public IActionResult AddRestaurant()
+        public async Task<ActionResult<RestaurantDTO>> CreateRestaurant(RestaurantDTO restaurantDto)
         {
-            // Logic to add a new restaurant
-            return Ok("Restaurant added successfully");
+            var restaurant = await _restaurantService.CreateRestaurantAsync(restaurantDto);
+            return CreatedAtAction(nameof(GetRestaurant), new { id = restaurant.Id }, restaurant);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateRestaurant(int id)
+        public async Task<IActionResult> UpdateRestaurant(int id, RestaurantDTO restaurantDto)
         {
-            // Logic to update a restaurant
-            return Ok("Restaurant updated successfully");
+            var restaurant = await _restaurantService.UpdateRestaurantAsync(id, restaurantDto);
+            if (restaurant == null)
+                return NotFound();
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteRestaurant(int id)
+        public async Task<IActionResult> DeleteRestaurant(int id)
         {
-            // Logic to delete a restaurant
-            return Ok("Restaurant deleted successfully");
+            var result = await _restaurantService.DeleteRestaurantAsync(id);
+            if (!result)
+                return NotFound();
+            return NoContent();
         }
     }
 }
